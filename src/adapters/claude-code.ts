@@ -1,9 +1,17 @@
 // src/adapters/claude-code.ts
 
-import { execa, ExecaChildProcess } from 'execa';
+import { execa } from 'execa';
 import { AgentConfig, AgentHandle } from '../types.js';
+import { logger } from '../logger.js';
 
 export function spawnClaudeCode(config: AgentConfig): AgentHandle {
+  logger.info('claude-code', 'spawning agent', {
+    id: config.id,
+    task: config.task,
+    tools: config.tools,
+    cwd: config.workingDirectory,
+  });
+
   const args = [
     '-p',
     '--output-format', 'text',
@@ -16,6 +24,8 @@ export function spawnClaudeCode(config: AgentConfig): AgentHandle {
   if (config.systemPrompt) {
     args.push('--system-prompt', config.systemPrompt);
   }
+
+  logger.debug('claude-code', 'exec args', { args });
 
   const proc = execa('claude', args, {
     cwd: config.workingDirectory,
@@ -33,28 +43,29 @@ export function spawnClaudeCode(config: AgentConfig): AgentHandle {
 
   proc.stdout?.on('data', (data: Buffer) => {
     const chunk = data.toString();
+    logger.debug('claude-code', 'stdout', { id: config.id, chunk });
     outputCallbacks.forEach(cb => cb(chunk));
   });
 
   proc.stderr?.on('data', (data: Buffer) => {
     const chunk = data.toString();
+    logger.debug('claude-code', 'stderr', { id: config.id, chunk });
     outputCallbacks.forEach(cb => cb(chunk));
   });
 
   proc.on('exit', (code) => {
+    logger.info('claude-code', 'agent exited', { id: config.id, code });
     exitCallbacks.forEach(cb => cb(code ?? 0));
   });
 
   return {
     id: config.id,
     config,
-    // Note: In print mode (-p), stdin is closed after the initial task.
-    // This send method is a no-op for this adapter. Interactive mode
-    // would require a different implementation.
     send: (message: string) => {
       proc.stdin?.write(message + '\n');
     },
     kill: () => {
+      logger.info('claude-code', 'killing agent', { id: config.id });
       proc.kill();
     },
     onOutput: (callback) => {
