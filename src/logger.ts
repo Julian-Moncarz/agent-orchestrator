@@ -17,10 +17,10 @@ interface LoggerConfig {
 }
 
 interface Logger {
-  debug: (component: string, msg: string, data: Record<string, unknown>) => void;
-  info: (component: string, msg: string, data: Record<string, unknown>) => void;
-  warn: (component: string, msg: string, data: Record<string, unknown>) => void;
-  error: (component: string, msg: string, data: Record<string, unknown>) => void;
+  debug: (component: string, msg: string, data?: Record<string, unknown>) => void;
+  info: (component: string, msg: string, data?: Record<string, unknown>) => void;
+  warn: (component: string, msg: string, data?: Record<string, unknown>) => void;
+  error: (component: string, msg: string, data?: Record<string, unknown>) => void;
 }
 
 export function createLogger(config: LoggerConfig): Logger {
@@ -28,7 +28,7 @@ export function createLogger(config: LoggerConfig): Logger {
     return LEVEL_PRIORITY[level] >= LEVEL_PRIORITY[config.level];
   };
 
-  const log = (level: LogLevel, component: string, msg: string, data: Record<string, unknown>) => {
+  const log = (level: LogLevel, component: string, msg: string, data?: Record<string, unknown>) => {
     if (!shouldLog(level)) return;
 
     const entry = {
@@ -36,10 +36,14 @@ export function createLogger(config: LoggerConfig): Logger {
       ts: new Date().toISOString(),
       component,
       msg,
-      data,
+      data: data ?? {},
     };
 
-    fs.appendFileSync(config.filePath, JSON.stringify(entry) + '\n');
+    try {
+      fs.appendFileSync(config.filePath, JSON.stringify(entry) + '\n');
+    } catch {
+      // Silently ignore - logging shouldn't crash the app
+    }
   };
 
   return {
