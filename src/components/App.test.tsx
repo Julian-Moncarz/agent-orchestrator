@@ -57,7 +57,7 @@ vi.mock('../logger.js', () => ({
   },
 }));
 
-import { getStore, updateAgentStatus } from '../store.js';
+import { getStore, updateAgentStatus, setFocusedAgent } from '../store.js';
 import { detectStatus } from '../status-detector.js';
 import { cleanInput } from '../input-cleaner.js';
 
@@ -428,6 +428,192 @@ describe('App', () => {
 
       // Should NOT contain clarification indicator
       expect(output).not.toContain('Clarification');
+    });
+  });
+
+  describe('Keyboard agent selection (number keys)', () => {
+    it('should show number key hint in UI', () => {
+      const { lastFrame } = render(<App />);
+
+      const output = lastFrame() ?? '';
+      // Should show the number key shortcut hint
+      expect(output).toContain('1-9 to focus agent');
+    });
+
+    it('should focus agent when pressing corresponding number key', async () => {
+      // Mock store with multiple agents
+      const mockAgent1 = {
+        config: { id: 'agent-1', type: 'claude-code', workingDirectory: '/tmp', task: 'task1' },
+        handle: { id: 'agent-1', config: {}, send: vi.fn(), kill: vi.fn(), onOutput: vi.fn(), onExit: vi.fn() },
+        status: { id: 'agent-1', state: 'working' as const, summary: 'Working...', lastOutput: '' },
+        outputBuffer: 'Output 1',
+      };
+      const mockAgent2 = {
+        config: { id: 'agent-2', type: 'claude-code', workingDirectory: '/tmp', task: 'task2' },
+        handle: { id: 'agent-2', config: {}, send: vi.fn(), kill: vi.fn(), onOutput: vi.fn(), onExit: vi.fn() },
+        status: { id: 'agent-2', state: 'working' as const, summary: 'Working...', lastOutput: '' },
+        outputBuffer: 'Output 2',
+      };
+
+      vi.mocked(getStore).mockReturnValue({
+        agents: new Map([
+          ['agent-1', mockAgent1],
+          ['agent-2', mockAgent2],
+        ]),
+        focusedAgentId: null,
+        orchestratorInput: '',
+      });
+
+      let stdin: { write: (input: string) => void };
+
+      await act(async () => {
+        const result = render(<App />);
+        stdin = result.stdin;
+      });
+
+      // Press '1' to focus first agent
+      await act(async () => {
+        stdin.write('1');
+      });
+
+      // setFocusedAgent should have been called with the first agent's ID
+      expect(setFocusedAgent).toHaveBeenCalledWith('agent-1');
+    });
+
+    it('should focus second agent when pressing 2', async () => {
+      const mockAgent1 = {
+        config: { id: 'agent-1', type: 'claude-code', workingDirectory: '/tmp', task: 'task1' },
+        handle: { id: 'agent-1', config: {}, send: vi.fn(), kill: vi.fn(), onOutput: vi.fn(), onExit: vi.fn() },
+        status: { id: 'agent-1', state: 'working' as const, summary: 'Working...', lastOutput: '' },
+        outputBuffer: 'Output 1',
+      };
+      const mockAgent2 = {
+        config: { id: 'agent-2', type: 'claude-code', workingDirectory: '/tmp', task: 'task2' },
+        handle: { id: 'agent-2', config: {}, send: vi.fn(), kill: vi.fn(), onOutput: vi.fn(), onExit: vi.fn() },
+        status: { id: 'agent-2', state: 'working' as const, summary: 'Working...', lastOutput: '' },
+        outputBuffer: 'Output 2',
+      };
+
+      vi.mocked(getStore).mockReturnValue({
+        agents: new Map([
+          ['agent-1', mockAgent1],
+          ['agent-2', mockAgent2],
+        ]),
+        focusedAgentId: null,
+        orchestratorInput: '',
+      });
+
+      let stdin: { write: (input: string) => void };
+
+      await act(async () => {
+        const result = render(<App />);
+        stdin = result.stdin;
+      });
+
+      // Press '2' to focus second agent
+      await act(async () => {
+        stdin.write('2');
+      });
+
+      // setFocusedAgent should have been called with the second agent's ID
+      expect(setFocusedAgent).toHaveBeenCalledWith('agent-2');
+    });
+
+    it('should NOT focus agent when pressing number higher than agent count', async () => {
+      // Only one agent exists
+      const mockAgent1 = {
+        config: { id: 'agent-1', type: 'claude-code', workingDirectory: '/tmp', task: 'task1' },
+        handle: { id: 'agent-1', config: {}, send: vi.fn(), kill: vi.fn(), onOutput: vi.fn(), onExit: vi.fn() },
+        status: { id: 'agent-1', state: 'working' as const, summary: 'Working...', lastOutput: '' },
+        outputBuffer: 'Output 1',
+      };
+
+      vi.mocked(getStore).mockReturnValue({
+        agents: new Map([['agent-1', mockAgent1]]),
+        focusedAgentId: null,
+        orchestratorInput: '',
+      });
+
+      let stdin: { write: (input: string) => void };
+
+      await act(async () => {
+        const result = render(<App />);
+        stdin = result.stdin;
+      });
+
+      // Press '5' when only 1 agent exists - should be no-op
+      await act(async () => {
+        stdin.write('5');
+      });
+
+      // setFocusedAgent should NOT have been called
+      expect(setFocusedAgent).not.toHaveBeenCalled();
+    });
+
+    it('should NOT respond to number keys when already in focused view', async () => {
+      // Agent already focused
+      const mockAgent1 = {
+        config: { id: 'agent-1', type: 'claude-code', workingDirectory: '/tmp', task: 'task1' },
+        handle: { id: 'agent-1', config: {}, send: vi.fn(), kill: vi.fn(), onOutput: vi.fn(), onExit: vi.fn() },
+        status: { id: 'agent-1', state: 'working' as const, summary: 'Working...', lastOutput: '' },
+        outputBuffer: 'Output 1',
+      };
+      const mockAgent2 = {
+        config: { id: 'agent-2', type: 'claude-code', workingDirectory: '/tmp', task: 'task2' },
+        handle: { id: 'agent-2', config: {}, send: vi.fn(), kill: vi.fn(), onOutput: vi.fn(), onExit: vi.fn() },
+        status: { id: 'agent-2', state: 'working' as const, summary: 'Working...', lastOutput: '' },
+        outputBuffer: 'Output 2',
+      };
+
+      vi.mocked(getStore).mockReturnValue({
+        agents: new Map([
+          ['agent-1', mockAgent1],
+          ['agent-2', mockAgent2],
+        ]),
+        focusedAgentId: 'agent-1', // Already focused on agent-1
+        orchestratorInput: '',
+      });
+
+      let stdin: { write: (input: string) => void };
+
+      await act(async () => {
+        const result = render(<App />);
+        stdin = result.stdin;
+      });
+
+      // Clear mock calls from initial render
+      vi.mocked(setFocusedAgent).mockClear();
+
+      // Press '2' while already focused - should be ignored
+      await act(async () => {
+        stdin.write('2');
+      });
+
+      // setFocusedAgent should NOT have been called (already in focused view)
+      expect(setFocusedAgent).not.toHaveBeenCalled();
+    });
+
+    it('should NOT respond to number keys when no agents exist', async () => {
+      vi.mocked(getStore).mockReturnValue({
+        agents: new Map(),
+        focusedAgentId: null,
+        orchestratorInput: '',
+      });
+
+      let stdin: { write: (input: string) => void };
+
+      await act(async () => {
+        const result = render(<App />);
+        stdin = result.stdin;
+      });
+
+      // Press '1' when no agents exist - should be no-op
+      await act(async () => {
+        stdin.write('1');
+      });
+
+      // setFocusedAgent should NOT have been called
+      expect(setFocusedAgent).not.toHaveBeenCalled();
     });
   });
 });

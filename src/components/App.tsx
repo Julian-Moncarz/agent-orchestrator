@@ -108,6 +108,16 @@ export const App: React.FC = () => {
         exit();
       }
     }
+
+    // Handle number keys 1-9 for agent selection (only when not focused)
+    if (!focusedId && input >= '1' && input <= '9') {
+      const index = parseInt(input, 10) - 1; // Convert to 0-based index
+      if (index < agents.length) {
+        const agentId = agents[index].id;
+        setFocusedAgent(agentId);
+        syncAgents();
+      }
+    }
   });
 
   // Periodic status refresh
@@ -177,7 +187,7 @@ export const App: React.FC = () => {
   return (
     <Box flexDirection="column" padding={1}>
       <Text bold color="cyan">Agent Orchestrator</Text>
-      <Text dimColor>ESC to exit | Enter to submit task</Text>
+      <Text dimColor>ESC to exit | Enter to submit task | 1-9 to focus agent</Text>
 
       {error && (
         <Box marginTop={1}>
