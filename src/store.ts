@@ -1,6 +1,7 @@
 // src/store.ts
 
 import { AgentConfig, AgentStatus, AgentHandle } from './types.js';
+import { logger } from './logger.js';
 
 export interface Agent {
   config: AgentConfig;
@@ -34,6 +35,7 @@ export function resetStore(): void {
 }
 
 export function addAgent(config: AgentConfig, handle: AgentHandle): void {
+  logger.info('store', 'adding agent', { id: config.id, task: config.task });
   const agent: Agent = {
     config,
     handle,
@@ -51,7 +53,11 @@ export function addAgent(config: AgentConfig, handle: AgentHandle): void {
 export function updateAgentStatus(id: string, status: Partial<AgentStatus>): void {
   const agent = store.agents.get(id);
   if (agent) {
+    const oldState = agent.status.state;
     agent.status = { ...agent.status, ...status };
+    logger.debug('store', 'status updated', { id, oldState, newState: agent.status.state });
+  } else {
+    logger.warn('store', 'update for unknown agent', { id });
   }
 }
 
@@ -64,16 +70,19 @@ export function appendAgentOutput(id: string, chunk: string): void {
     if (agent.outputBuffer.length > MAX_OUTPUT_BUFFER_LENGTH) {
       agent.outputBuffer = agent.outputBuffer.slice(-MAX_OUTPUT_BUFFER_LENGTH);
     }
+    logger.debug('store', 'output appended', { id, chunkLength: chunk.length, bufferLength: agent.outputBuffer.length });
   }
 }
 
 export function setFocusedAgent(id: string | null): void {
+  logger.debug('store', 'focus changed', { from: store.focusedAgentId, to: id });
   store.focusedAgentId = id;
 }
 
 export function removeAgent(id: string): void {
   const agent = store.agents.get(id);
   if (agent) {
+    logger.info('store', 'removing agent', { id });
     agent.handle.kill();
     store.agents.delete(id);
   }
