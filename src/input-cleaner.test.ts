@@ -114,17 +114,13 @@ describe('cleanInput', () => {
     expect(result.clarificationNeeded).toBe('Please provide a task description.');
   });
 
-  it('falls back gracefully on LLM errors', async () => {
+  it('throws on LLM errors', async () => {
     mockCreate.mockRejectedValueOnce(new Error('API Error'));
 
-    const result = await cleanInput('do something');
-
-    expect(result.tasks).toHaveLength(1);
-    expect(result.tasks[0].prompt).toBe('do something');
-    expect(result.clarificationNeeded).toBeUndefined();
+    await expect(cleanInput('do something')).rejects.toThrow('API Error');
   });
 
-  it('falls back gracefully on invalid JSON response', async () => {
+  it('throws on invalid JSON response', async () => {
     mockCreate.mockResolvedValueOnce({
       content: [
         {
@@ -134,10 +130,7 @@ describe('cleanInput', () => {
       ],
     });
 
-    const result = await cleanInput('do something else');
-
-    expect(result.tasks).toHaveLength(1);
-    expect(result.tasks[0].prompt).toBe('do something else');
+    await expect(cleanInput('do something else')).rejects.toThrow();
   });
 
   it('uses correct model and parameters', async () => {

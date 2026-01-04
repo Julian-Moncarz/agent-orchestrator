@@ -74,9 +74,6 @@ Rules:
     return parsed;
   } catch (error) {
     logger.error('cleanInput', 'failed', { error: String(error) });
-    // Fallback if LLM fails - return the raw input as a single task
-    return {
-      tasks: [{ prompt: rawInput }],
-    };
+    throw error;
   }
 }

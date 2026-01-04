@@ -20,6 +20,7 @@ export const App: React.FC = () => {
   const [agents, setAgents] = useState<AgentStatus[]>([]);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Sync agents from store
   const syncAgents = useCallback(() => {
@@ -40,6 +41,7 @@ export const App: React.FC = () => {
 
     setIsProcessing(true);
     setInputValue('');
+    setError(null);
 
     try {
       const cleaned = await cleanInput(value);
@@ -83,8 +85,10 @@ export const App: React.FC = () => {
       }
 
       syncAgents();
-    } catch (error) {
-      logger.error('app', 'handleSubmit failed', { error: String(error) });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      logger.error('app', 'handleSubmit failed', { error: errorMsg });
+      setError(errorMsg);
     } finally {
       setIsProcessing(false);
       logger.debug('app', 'processing complete');
@@ -167,6 +171,12 @@ export const App: React.FC = () => {
     <Box flexDirection="column" padding={1}>
       <Text bold color="cyan">Agent Orchestrator</Text>
       <Text dimColor>ESC to exit | Enter to submit task</Text>
+
+      {error && (
+        <Box marginTop={1}>
+          <Text color="red">Error: {error}</Text>
+        </Box>
+      )}
 
       <Box marginTop={1}>
         <Text>&gt; </Text>

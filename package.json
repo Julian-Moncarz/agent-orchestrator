@@ -21,6 +21,7 @@
   "license": "ISC",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
+    "dotenv": "^17.2.3",
     "execa": "^9.6.1",
     "ink": "^6.6.0",
     "ink-text-input": "^6.0.0",
