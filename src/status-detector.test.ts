@@ -40,7 +40,6 @@ describe('detectStatus', () => {
     const result = await detectStatus('agent-1', 'Running build command...');
 
     expect(result).toEqual({
-      id: 'agent-1',
       state: 'working',
       summary: 'Agent is processing files',
       lastOutput: 'Running build command...',
@@ -60,7 +59,6 @@ describe('detectStatus', () => {
     const result = await detectStatus('agent-2', 'Do you want me to proceed with the changes?');
 
     expect(result).toEqual({
-      id: 'agent-2',
       state: 'needs_input',
       summary: 'Agent is waiting for user confirmation',
       lastOutput: 'Do you want me to proceed with the changes?',
@@ -80,7 +78,6 @@ describe('detectStatus', () => {
     const result = await detectStatus('agent-3', 'All tests passed. Task complete.');
 
     expect(result).toEqual({
-      id: 'agent-3',
       state: 'done',
       summary: 'Task completed successfully',
       lastOutput: 'All tests passed. Task complete.',
@@ -93,7 +90,6 @@ describe('detectStatus', () => {
     const result = await detectStatus('agent-4', 'Some output here');
 
     expect(result).toEqual({
-      id: 'agent-4',
       state: 'working',
       summary: 'Processing...',
       lastOutput: 'Some output here',
@@ -113,7 +109,6 @@ describe('detectStatus', () => {
     const result = await detectStatus('agent-5', 'Some output');
 
     expect(result).toEqual({
-      id: 'agent-5',
       state: 'working',
       summary: 'Processing...',
       lastOutput: 'Some output',
@@ -161,7 +156,6 @@ describe('detectStatus', () => {
 
     // Should fall back since empty content can't be parsed as JSON
     expect(result).toEqual({
-      id: 'agent-7',
       state: 'working',
       summary: 'Processing...',
       lastOutput: 'Some output',
@@ -184,7 +178,6 @@ describe('detectStatus', () => {
 
     // Should fall back since non-text content results in empty string
     expect(result).toEqual({
-      id: 'agent-8',
       state: 'working',
       summary: 'Processing...',
       lastOutput: 'Some output',

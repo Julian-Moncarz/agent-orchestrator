@@ -2,6 +2,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { AgentStatus } from './types.js';
+import { logger } from './logger.js';
 
 const client = new Anthropic();
 
@@ -13,9 +14,11 @@ interface DetectionResult {
 export async function detectStatus(
   agentId: string,
   recentOutput: string
-): Promise<AgentStatus> {
+): Promise<Partial<AgentStatus>> {
   // Truncate to last ~500 chars
   const truncated = recentOutput.slice(-500);
+
+  logger.debug('status-detector', 'detecting status', { agentId, outputLength: truncated.length });
 
   try {
     const response = await client.messages.create({
@@ -34,24 +37,31 @@ Respond with exactly this JSON format:
 
 - "working" = agent is actively processing
 - "needs_input" = agent asked a question or is waiting for user
-- "done" = agent completed its task`
-        }
-      ]
+- "done" = agent completed its task`,
+        },
+      ],
     });
 
     const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    logger.debug('status-detector', 'received response', { agentId, text });
+
     const parsed = JSON.parse(text) as DetectionResult;
 
+    logger.info('status-detector', 'status detected', {
+      agentId,
+      status: parsed.status,
+      summary: parsed.summary,
+    });
+
     return {
-      id: agentId,
       state: parsed.status,
       summary: parsed.summary,
       lastOutput: truncated,
     };
   } catch (error) {
+    logger.error('status-detector', 'detection failed', { agentId, error: String(error) });
     // Fallback if LLM fails
     return {
-      id: agentId,
       state: 'working',
       summary: 'Processing...',
       lastOutput: truncated,
