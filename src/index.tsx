@@ -1,6 +1,5 @@
-import { render, Text } from 'ink';
+import { render } from 'ink';
 import React from 'react';
-
-const App = () => <Text>Agent Orchestrator</Text>;
+import { App } from './components/App.js';
 
 render(<App />);
