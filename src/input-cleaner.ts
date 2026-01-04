@@ -1,6 +1,7 @@
 // src/input-cleaner.ts
 
 import Anthropic from '@anthropic-ai/sdk';
+import { logger } from './logger.js';
 
 const client = new Anthropic();
 
@@ -13,8 +14,11 @@ export interface CleanedInput {
 }
 
 export async function cleanInput(rawInput: string): Promise<CleanedInput> {
+  logger.debug('cleanInput', 'received input', { raw: rawInput });
+
   // Handle empty input gracefully
   if (!rawInput.trim()) {
+    logger.info('cleanInput', 'empty input');
     return {
       tasks: [],
       clarificationNeeded: 'Please provide a task description.',
@@ -22,12 +26,12 @@ export async function cleanInput(rawInput: string): Promise<CleanedInput> {
   }
 
   try {
-    const response = await client.messages.create({
+    const requestBody = {
       model: 'claude-3-5-haiku-20241022',
       max_tokens: 500,
       messages: [
         {
-          role: 'user',
+          role: 'user' as const,
           content: `Analyze this user input and clean it up into clear, actionable tasks.
 
 INPUT:
@@ -51,13 +55,25 @@ Rules:
 - If input is too vague or ambiguous to create tasks, return empty tasks array with clarificationNeeded`,
         },
       ],
-    });
+    };
+
+    logger.debug('cleanInput', 'calling anthropic', { model: requestBody.model });
+
+    const response = await client.messages.create(requestBody);
 
     const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    logger.debug('cleanInput', 'received response', { text });
+
     const parsed = JSON.parse(text) as CleanedInput;
 
+    logger.info('cleanInput', 'parsed result', {
+      taskCount: parsed.tasks.length,
+      clarificationNeeded: !!parsed.clarificationNeeded,
+    });
+
     return parsed;
-  } catch {
+  } catch (error) {
+    logger.error('cleanInput', 'failed', { error: String(error) });
     // Fallback if LLM fails - return the raw input as a single task
     return {
       tasks: [{ prompt: rawInput }],
