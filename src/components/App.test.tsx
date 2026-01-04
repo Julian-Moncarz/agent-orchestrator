@@ -59,6 +59,7 @@ vi.mock('../logger.js', () => ({
 
 import { getStore, updateAgentStatus } from '../store.js';
 import { detectStatus } from '../status-detector.js';
+import { cleanInput } from '../input-cleaner.js';
 
 describe('App', () => {
   beforeEach(() => {
@@ -284,6 +285,149 @@ describe('App', () => {
       expect(detectStatus).toHaveBeenCalledWith('agent-output', 'Has output');
       // And NOT called with agent-empty
       expect(detectStatus).not.toHaveBeenCalledWith('agent-empty', expect.anything());
+    });
+  });
+
+  describe('Clarification display', () => {
+    it('should display clarification message when cleanInput returns clarificationNeeded', async () => {
+      vi.mocked(cleanInput).mockResolvedValueOnce({
+        tasks: [],
+        clarificationNeeded: 'Which file do you want me to update?',
+      });
+
+      let lastFrame: () => string | undefined;
+      let stdin: { write: (input: string) => void };
+
+      await act(async () => {
+        const result = render(<App />);
+        lastFrame = result.lastFrame;
+        stdin = result.stdin;
+      });
+
+      // Simulate user input and submission
+      await act(async () => {
+        stdin.write('update it');
+        stdin.write('\r'); // Enter key
+      });
+
+      // Wait for async processing
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100);
+      });
+
+      const output = lastFrame!() ?? '';
+
+      // Should display the clarification message
+      expect(output).toContain('Which file do you want me to update?');
+    });
+
+    it('should style clarification differently from error (yellow/warning style)', async () => {
+      vi.mocked(cleanInput).mockResolvedValueOnce({
+        tasks: [],
+        clarificationNeeded: 'Please specify which module.',
+      });
+
+      let lastFrame: () => string | undefined;
+      let stdin: { write: (input: string) => void };
+
+      await act(async () => {
+        const result = render(<App />);
+        lastFrame = result.lastFrame;
+        stdin = result.stdin;
+      });
+
+      await act(async () => {
+        stdin.write('fix it');
+        stdin.write('\r');
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100);
+      });
+
+      const output = lastFrame!() ?? '';
+
+      // Should contain clarification prefix/indicator
+      expect(output).toContain('Clarification');
+      expect(output).toContain('Please specify which module.');
+    });
+
+    it('should clear clarification when user submits new input', async () => {
+      // First submission returns clarification
+      vi.mocked(cleanInput)
+        .mockResolvedValueOnce({
+          tasks: [],
+          clarificationNeeded: 'Which file?',
+        })
+        // Second submission returns a real task
+        .mockResolvedValueOnce({
+          tasks: [{ prompt: 'Fix the auth bug' }],
+        });
+
+      let lastFrame: () => string | undefined;
+      let stdin: { write: (input: string) => void };
+
+      await act(async () => {
+        const result = render(<App />);
+        lastFrame = result.lastFrame;
+        stdin = result.stdin;
+      });
+
+      // First input triggers clarification
+      await act(async () => {
+        stdin.write('fix it');
+        stdin.write('\r');
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100);
+      });
+
+      let output = lastFrame!() ?? '';
+      expect(output).toContain('Which file?');
+
+      // Second input should clear clarification
+      await act(async () => {
+        stdin.write('fix the auth bug in login.ts');
+        stdin.write('\r');
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100);
+      });
+
+      output = lastFrame!() ?? '';
+      // Clarification should be cleared
+      expect(output).not.toContain('Which file?');
+    });
+
+    it('should not show clarification when cleanInput returns tasks', async () => {
+      vi.mocked(cleanInput).mockResolvedValueOnce({
+        tasks: [{ prompt: 'Create a hello world function' }],
+      });
+
+      let lastFrame: () => string | undefined;
+      let stdin: { write: (input: string) => void };
+
+      await act(async () => {
+        const result = render(<App />);
+        lastFrame = result.lastFrame;
+        stdin = result.stdin;
+      });
+
+      await act(async () => {
+        stdin.write('create hello world');
+        stdin.write('\r');
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100);
+      });
+
+      const output = lastFrame!() ?? '';
+
+      // Should NOT contain clarification indicator
+      expect(output).not.toContain('Clarification');
     });
   });
 });

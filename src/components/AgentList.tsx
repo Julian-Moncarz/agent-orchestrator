@@ -25,11 +25,36 @@ const getStatusIndicator = (state: AgentStatus['state']): string => {
   }
 };
 
-const truncateSummary = (summary: string, maxLength: number = 60): string => {
-  if (summary.length <= maxLength) {
-    return summary;
+const truncateText = (text: string, maxLength: number = 60): string => {
+  if (text.length <= maxLength) {
+    return text;
   }
-  return summary.slice(0, maxLength - 3) + '...';
+  return text.slice(0, maxLength - 3) + '...';
+};
+
+/**
+ * Gets the display text for an agent's status line.
+ * Prioritizes showing actual output over LLM-generated summary.
+ * If lastOutput is available, extracts the last meaningful line.
+ */
+export const getDisplaySummary = (agent: AgentStatus): string => {
+  // If we have real output, show the last line of it
+  if (agent.lastOutput && agent.lastOutput.trim()) {
+    // Get the last non-empty line from the output
+    const lines = agent.lastOutput.trim().split('\n').filter(line => line.trim());
+    if (lines.length > 0) {
+      const lastLine = lines[lines.length - 1].trim();
+      return truncateText(lastLine);
+    }
+  }
+
+  // Fall back to LLM-generated summary if no output yet
+  if (agent.summary && agent.summary.trim()) {
+    return truncateText(agent.summary);
+  }
+
+  // Default message when nothing is available
+  return 'Starting...';
 };
 
 export const getStateColor = (state: AgentStatus['state']): string => {
@@ -65,7 +90,7 @@ export const AgentList: React.FC<AgentListProps> = ({ agents, focusedId, onSelec
             borderStyle={isFocused ? 'double' : undefined}
           >
             <Text color={getStateColor(agent.state)}>{getStatusIndicator(agent.state)} {agent.id}</Text>
-            <Text>{truncateSummary(agent.summary)}</Text>
+            <Text>{getDisplaySummary(agent)}</Text>
           </Box>
         );
       })}

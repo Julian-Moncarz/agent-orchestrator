@@ -21,6 +21,7 @@ export const App: React.FC = () => {
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [clarification, setClarification] = useState<string | null>(null);
 
   // Sync agents from store
   const syncAgents = useCallback(() => {
@@ -42,16 +43,16 @@ export const App: React.FC = () => {
     setIsProcessing(true);
     setInputValue('');
     setError(null);
+    setClarification(null);
 
     try {
       const cleaned = await cleanInput(value);
 
       if (cleaned.clarificationNeeded) {
-        logger.warn('app', 'clarification needed but not shown to user', {
+        logger.info('app', 'showing clarification to user', {
           clarification: cleaned.clarificationNeeded,
         });
-        // For MVP, just log clarification needed
-        // In a full implementation, we'd show this to the user
+        setClarification(cleaned.clarificationNeeded);
         return;
       }
 
@@ -181,6 +182,12 @@ export const App: React.FC = () => {
       {error && (
         <Box marginTop={1}>
           <Text color="red">Error: {error}</Text>
+        </Box>
+      )}
+
+      {clarification && (
+        <Box marginTop={1}>
+          <Text color="yellow">Clarification needed: {clarification}</Text>
         </Box>
       )}
 

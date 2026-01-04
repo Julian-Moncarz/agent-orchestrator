@@ -3,7 +3,7 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render } from 'ink-testing-library';
-import { AgentList, getStateColor } from './AgentList.js';
+import { AgentList, getStateColor, getDisplaySummary } from './AgentList.js';
 
 describe('AgentList', () => {
   it('renders "No agents running" when agents array is empty', () => {
@@ -106,6 +106,102 @@ describe('AgentList', () => {
 
     it('returns gray for error state', () => {
       expect(getStateColor('error')).toBe('gray');
+    });
+  });
+
+  describe('getDisplaySummary', () => {
+    it('returns last line of lastOutput when available', () => {
+      const agent = {
+        id: 'agent-1',
+        state: 'working' as const,
+        summary: 'LLM summary here',
+        lastOutput: 'First line\nSecond line\nThird line',
+      };
+
+      expect(getDisplaySummary(agent)).toBe('Third line');
+    });
+
+    it('skips empty lines when getting last line from lastOutput', () => {
+      const agent = {
+        id: 'agent-1',
+        state: 'working' as const,
+        summary: 'LLM summary here',
+        lastOutput: 'First line\nSecond line\n\n   \n',
+      };
+
+      expect(getDisplaySummary(agent)).toBe('Second line');
+    });
+
+    it('falls back to summary when lastOutput is empty', () => {
+      const agent = {
+        id: 'agent-1',
+        state: 'working' as const,
+        summary: 'LLM generated summary',
+        lastOutput: '',
+      };
+
+      expect(getDisplaySummary(agent)).toBe('LLM generated summary');
+    });
+
+    it('falls back to summary when lastOutput is only whitespace', () => {
+      const agent = {
+        id: 'agent-1',
+        state: 'working' as const,
+        summary: 'LLM generated summary',
+        lastOutput: '   \n\n   ',
+      };
+
+      expect(getDisplaySummary(agent)).toBe('LLM generated summary');
+    });
+
+    it('returns "Starting..." when both lastOutput and summary are empty', () => {
+      const agent = {
+        id: 'agent-1',
+        state: 'starting' as const,
+        summary: '',
+        lastOutput: '',
+      };
+
+      expect(getDisplaySummary(agent)).toBe('Starting...');
+    });
+
+    it('truncates long lastOutput lines to 60 chars with ellipsis', () => {
+      const longLine = 'A'.repeat(80);
+      const agent = {
+        id: 'agent-1',
+        state: 'working' as const,
+        summary: 'summary',
+        lastOutput: longLine,
+      };
+
+      const result = getDisplaySummary(agent);
+      expect(result.length).toBe(60);
+      expect(result).toBe('A'.repeat(57) + '...');
+    });
+
+    it('truncates long summary to 60 chars with ellipsis', () => {
+      const longSummary = 'B'.repeat(80);
+      const agent = {
+        id: 'agent-1',
+        state: 'working' as const,
+        summary: longSummary,
+        lastOutput: '',
+      };
+
+      const result = getDisplaySummary(agent);
+      expect(result.length).toBe(60);
+      expect(result).toBe('B'.repeat(57) + '...');
+    });
+
+    it('prioritizes lastOutput over summary', () => {
+      const agent = {
+        id: 'agent-1',
+        state: 'working' as const,
+        summary: 'This is the LLM summary',
+        lastOutput: 'This is actual output',
+      };
+
+      expect(getDisplaySummary(agent)).toBe('This is actual output');
     });
   });
 });

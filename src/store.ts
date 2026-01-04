@@ -63,6 +63,8 @@ export function updateAgentStatus(id: string, status: Partial<AgentStatus>): voi
 
 const MAX_OUTPUT_BUFFER_LENGTH = 2000;
 
+const MAX_LAST_OUTPUT_LENGTH = 500;
+
 export function appendAgentOutput(id: string, chunk: string): void {
   const agent = store.agents.get(id);
   if (agent) {
@@ -70,6 +72,9 @@ export function appendAgentOutput(id: string, chunk: string): void {
     if (agent.outputBuffer.length > MAX_OUTPUT_BUFFER_LENGTH) {
       agent.outputBuffer = agent.outputBuffer.slice(-MAX_OUTPUT_BUFFER_LENGTH);
     }
+    // Update lastOutput with the most recent portion of the buffer
+    // This ensures the UI can show real output immediately, not just LLM summaries
+    agent.status.lastOutput = agent.outputBuffer.slice(-MAX_LAST_OUTPUT_LENGTH);
     logger.debug('store', 'output appended', { id, chunkLength: chunk.length, bufferLength: agent.outputBuffer.length });
   }
 }

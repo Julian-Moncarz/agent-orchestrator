@@ -131,6 +131,55 @@ describe('store', () => {
       // Should keep last 2000 chars: 1000 A's + 1000 B's
       expect(agent!.outputBuffer).toBe('A'.repeat(1000) + 'B'.repeat(1000));
     });
+
+    it('updates lastOutput in agent status when output is appended', () => {
+      const config: AgentConfig = {
+        id: 'agent-1',
+        type: 'claude-code',
+        workingDirectory: '/test',
+        task: 'test task',
+      };
+      const handle: AgentHandle = {
+        id: 'agent-1',
+        config,
+        send: vi.fn(),
+        kill: vi.fn(),
+        onOutput: vi.fn(),
+        onExit: vi.fn(),
+      };
+
+      addAgent(config, handle);
+      appendAgentOutput('agent-1', 'First line\nSecond line');
+
+      const agent = getStore().agents.get('agent-1');
+      expect(agent!.status.lastOutput).toBe('First line\nSecond line');
+    });
+
+    it('caps lastOutput at 500 chars', () => {
+      const config: AgentConfig = {
+        id: 'agent-1',
+        type: 'claude-code',
+        workingDirectory: '/test',
+        task: 'test task',
+      };
+      const handle: AgentHandle = {
+        id: 'agent-1',
+        config,
+        send: vi.fn(),
+        kill: vi.fn(),
+        onOutput: vi.fn(),
+        onExit: vi.fn(),
+      };
+
+      addAgent(config, handle);
+      // Add 600 characters
+      appendAgentOutput('agent-1', 'X'.repeat(600));
+
+      const agent = getStore().agents.get('agent-1');
+      expect(agent!.status.lastOutput.length).toBe(500);
+      // Should keep the last 500 chars
+      expect(agent!.status.lastOutput).toBe('X'.repeat(500));
+    });
   });
 
   describe('setFocusedAgent', () => {
