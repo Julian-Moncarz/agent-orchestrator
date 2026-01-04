@@ -24,8 +24,9 @@ export function spawnClaudeCode(config: AgentConfig): AgentHandle {
     stderr: 'pipe',
   });
 
-  // Send initial task
+  // Send initial task and close stdin (for -p/print mode)
   proc.stdin?.write(config.task + '\n');
+  proc.stdin?.end();
 
   const outputCallbacks: ((chunk: string) => void)[] = [];
   const exitCallbacks: ((code: number) => void)[] = [];
