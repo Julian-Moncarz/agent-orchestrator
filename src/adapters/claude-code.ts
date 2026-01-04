@@ -48,6 +48,9 @@ export function spawnClaudeCode(config: AgentConfig): AgentHandle {
   return {
     id: config.id,
     config,
+    // Note: In print mode (-p), stdin is closed after the initial task.
+    // This send method is a no-op for this adapter. Interactive mode
+    // would require a different implementation.
     send: (message: string) => {
       proc.stdin?.write(message + '\n');
     },
