@@ -10,6 +10,7 @@ import { cleanInput } from '../input-cleaner.js';
 import { detectStatus } from '../status-detector.js';
 import { spawnAgent } from '../adapters/index.js';
 import { AgentStatus } from '../types.js';
+import { logger } from '../logger.js';
 
 const STATUS_REFRESH_INTERVAL = 3000; // 3 seconds
 
@@ -30,7 +31,12 @@ export const App: React.FC = () => {
 
   // Handle input submission
   const handleSubmit = useCallback(async (value: string) => {
-    if (!value.trim() || isProcessing) return;
+    logger.info('app', 'input submitted', { value });
+
+    if (!value.trim() || isProcessing) {
+      logger.debug('app', 'ignoring submit', { empty: !value.trim(), isProcessing });
+      return;
+    }
 
     setIsProcessing(true);
     setInputValue('');
@@ -39,10 +45,15 @@ export const App: React.FC = () => {
       const cleaned = await cleanInput(value);
 
       if (cleaned.clarificationNeeded) {
+        logger.warn('app', 'clarification needed but not shown to user', {
+          clarification: cleaned.clarificationNeeded,
+        });
         // For MVP, just log clarification needed
         // In a full implementation, we'd show this to the user
         return;
       }
+
+      logger.info('app', 'spawning agents', { taskCount: cleaned.tasks.length });
 
       // Spawn an agent for each task
       for (const task of cleaned.tasks) {
@@ -54,6 +65,8 @@ export const App: React.FC = () => {
           task: task.prompt,
           tools: task.suggestedTools,
         };
+
+        logger.debug('app', 'spawning agent', { agentId, task: task.prompt });
 
         const handle = spawnAgent(config);
         addAgent(config, handle);
@@ -70,8 +83,11 @@ export const App: React.FC = () => {
       }
 
       syncAgents();
+    } catch (error) {
+      logger.error('app', 'handleSubmit failed', { error: String(error) });
     } finally {
       setIsProcessing(false);
+      logger.debug('app', 'processing complete');
     }
   }, [isProcessing, syncAgents]);
 
