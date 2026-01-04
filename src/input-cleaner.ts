@@ -37,22 +37,18 @@ export async function cleanInput(rawInput: string): Promise<CleanedInput> {
 INPUT:
 ${rawInput}
 
-Respond with exactly this JSON format:
-{
-  "tasks": [
-    { "prompt": "Clear, actionable task description", "suggestedTools": ["Tool1", "Tool2"] }
-  ],
-  "clarificationNeeded": "Question to ask user if input is ambiguous (optional)"
-}
+RESPOND WITH ONLY A JSON OBJECT. NO OTHER TEXT BEFORE OR AFTER.
+
+JSON format:
+{"tasks": [{"prompt": "Clear task description", "suggestedTools": ["Tool1"]}], "clarificationNeeded": "optional question"}
 
 Available tools: Bash, Read, Edit, Write, Glob, Grep
 
 Rules:
 - Clean up informal language into clear prompts
 - Identify distinct tasks if multiple exist
-- Each task should be a clear, actionable instruction
-- Suggest which tools each task might need (optional)
-- If input is too vague or ambiguous to create tasks, return empty tasks array with clarificationNeeded`,
+- If input is too vague, return empty tasks with clarificationNeeded
+- CRITICAL: Output ONLY valid JSON, nothing else`,
         },
       ],
     };
@@ -64,7 +60,12 @@ Rules:
     const text = response.content[0].type === 'text' ? response.content[0].text : '';
     logger.debug('cleanInput', 'received response', { text });
 
-    const parsed = JSON.parse(text) as CleanedInput;
+    // Extract JSON from response (in case model adds extra text)
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('No JSON object found in response');
+    }
+    const parsed = JSON.parse(jsonMatch[0]) as CleanedInput;
 
     logger.info('cleanInput', 'parsed result', {
       taskCount: parsed.tasks.length,

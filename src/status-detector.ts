@@ -27,17 +27,16 @@ export async function detectStatus(
       messages: [
         {
           role: 'user',
-          content: `Analyze this agent output and respond with JSON only:
+          content: `Analyze this agent output. RESPOND WITH ONLY JSON, NO OTHER TEXT.
 
 OUTPUT:
 ${truncated}
 
-Respond with exactly this JSON format:
-{"status": "working" | "needs_input" | "done", "summary": "1-2 sentence summary of what agent is doing"}
+JSON format: {"status": "working", "summary": "brief description"}
 
-- "working" = agent is actively processing
-- "needs_input" = agent asked a question or is waiting for user
-- "done" = agent completed its task`,
+Status values: "working" (processing), "needs_input" (waiting for user), "done" (completed)
+
+CRITICAL: Output ONLY the JSON object, nothing else.`,
         },
       ],
     });
@@ -45,7 +44,12 @@ Respond with exactly this JSON format:
     const text = response.content[0].type === 'text' ? response.content[0].text : '';
     logger.debug('status-detector', 'received response', { agentId, text });
 
-    const parsed = JSON.parse(text) as DetectionResult;
+    // Extract JSON from response (in case model adds extra text)
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('No JSON object found in response');
+    }
+    const parsed = JSON.parse(jsonMatch[0]) as DetectionResult;
 
     logger.info('status-detector', 'status detected', {
       agentId,
