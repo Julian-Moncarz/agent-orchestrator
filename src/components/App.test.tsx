@@ -319,13 +319,25 @@ describe('App', () => {
         stdin = result.stdin;
       });
 
-      // Simulate user input and submission
+      // Simulate typing each character and then Enter
+      // ink-text-input needs the text first, then a separate Enter
       await act(async () => {
-        stdin.write('update it');
-        stdin.write('\r'); // Enter key
+        for (const char of 'update it') {
+          stdin.write(char);
+        }
       });
 
-      // Wait for async processing
+      // Small delay for React to process
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10);
+      });
+
+      // Now send Enter key
+      await act(async () => {
+        stdin.write('\r');
+      });
+
+      // Allow async handleSubmit to complete
       await act(async () => {
         await vi.advanceTimersByTimeAsync(100);
       });
@@ -351,11 +363,24 @@ describe('App', () => {
         stdin = result.stdin;
       });
 
+      // Simulate typing each character
       await act(async () => {
-        stdin.write('fix it');
+        for (const char of 'fix it') {
+          stdin.write(char);
+        }
+      });
+
+      // Small delay for React to process
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10);
+      });
+
+      // Now send Enter key
+      await act(async () => {
         stdin.write('\r');
       });
 
+      // Allow async handleSubmit to complete
       await act(async () => {
         await vi.advanceTimersByTimeAsync(100);
       });
@@ -388,9 +413,18 @@ describe('App', () => {
         stdin = result.stdin;
       });
 
-      // First input triggers clarification
+      // First input triggers clarification - type each character
       await act(async () => {
-        stdin.write('fix it');
+        for (const char of 'fix it') {
+          stdin.write(char);
+        }
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10);
+      });
+
+      await act(async () => {
         stdin.write('\r');
       });
 
@@ -401,9 +435,18 @@ describe('App', () => {
       let output = lastFrame!() ?? '';
       expect(output).toContain('Which file?');
 
-      // Second input should clear clarification
+      // Second input should clear clarification - type each character
       await act(async () => {
-        stdin.write('fix the auth bug in login.ts');
+        for (const char of 'fix the auth bug in login.ts') {
+          stdin.write(char);
+        }
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10);
+      });
+
+      await act(async () => {
         stdin.write('\r');
       });
 
