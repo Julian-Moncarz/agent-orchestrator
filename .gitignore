@@ -6,3 +6,4 @@ dist/
 .env
 orchestrator-debug.log
 .claude/
+.agents/skills/
