@@ -11,6 +11,7 @@ import { detectStatus } from '../status-detector.js';
 import { spawnAgent } from '../adapters/index.js';
 import { AgentStatus } from '../types.js';
 import { logger } from '../logger.js';
+import { generateAgentName } from '../agent-name.js';
 
 const STATUS_REFRESH_INTERVAL = 3000; // 3 seconds
 
@@ -60,7 +61,7 @@ export const App: React.FC = () => {
 
       // Spawn an agent for each task
       for (const task of cleaned.tasks) {
-        const agentId = `agent-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        const agentId = generateAgentName(task.prompt);
         const config = {
           id: agentId,
           type: 'claude-code' as const,

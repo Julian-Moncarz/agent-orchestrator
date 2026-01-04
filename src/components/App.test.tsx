@@ -57,6 +57,12 @@ vi.mock('../logger.js', () => ({
   },
 }));
 
+// Mock the agent-name module
+vi.mock('../agent-name.js', () => ({
+  generateAgentName: vi.fn((prompt: string) => `mock-${prompt.split(' ')[0].toLowerCase()}`),
+  resetUsedNames: vi.fn(),
+}));
+
 import { getStore, updateAgentStatus, setFocusedAgent } from '../store.js';
 import { detectStatus } from '../status-detector.js';
 import { cleanInput } from '../input-cleaner.js';
@@ -289,6 +295,15 @@ describe('App', () => {
   });
 
   describe('Clarification display', () => {
+    beforeEach(() => {
+      // Reset getStore to return empty agents map for clarification tests
+      vi.mocked(getStore).mockReturnValue({
+        agents: new Map(),
+        focusedAgentId: null,
+        orchestratorInput: '',
+      });
+    });
+
     it('should display clarification message when cleanInput returns clarificationNeeded', async () => {
       vi.mocked(cleanInput).mockResolvedValueOnce({
         tasks: [],
