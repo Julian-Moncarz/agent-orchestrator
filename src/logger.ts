@@ -53,3 +53,24 @@ export function createLogger(config: LoggerConfig): Logger {
     error: (component, msg, data) => log('error', component, msg, data),
   };
 }
+
+// Default logger instance
+const DEFAULT_LOG_FILE = 'orchestrator-debug.log';
+const DEFAULT_LOG_LEVEL: LogLevel = 'debug';
+
+function getLogLevel(): LogLevel {
+  const level = process.env.LOG_LEVEL?.toLowerCase();
+  if (level && ['debug', 'info', 'warn', 'error'].includes(level)) {
+    return level as LogLevel;
+  }
+  return DEFAULT_LOG_LEVEL;
+}
+
+function getLogFile(): string {
+  return process.env.ORCHESTRATOR_LOG_FILE || DEFAULT_LOG_FILE;
+}
+
+export const logger = createLogger({
+  level: getLogLevel(),
+  filePath: getLogFile(),
+});

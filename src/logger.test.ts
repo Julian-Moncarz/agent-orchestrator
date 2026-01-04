@@ -60,4 +60,56 @@ describe('logger', () => {
       );
     });
   });
+
+  describe('default logger', () => {
+    it('should use LOG_LEVEL env var', async () => {
+      vi.stubEnv('LOG_LEVEL', 'warn');
+
+      // Re-import to pick up env var
+      vi.resetModules();
+      const { logger } = await import('./logger.js');
+
+      logger.info('test', 'should not log', {});
+      expect(fs.appendFileSync).not.toHaveBeenCalled();
+
+      logger.warn('test', 'should log', {});
+      expect(fs.appendFileSync).toHaveBeenCalled();
+
+      vi.unstubAllEnvs();
+    });
+
+    it('should use ORCHESTRATOR_LOG_FILE env var', async () => {
+      vi.stubEnv('ORCHESTRATOR_LOG_FILE', '/custom/path.log');
+      vi.stubEnv('LOG_LEVEL', 'debug');
+
+      vi.resetModules();
+      const { logger } = await import('./logger.js');
+
+      logger.info('test', 'msg', {});
+
+      expect(fs.appendFileSync).toHaveBeenCalledWith(
+        '/custom/path.log',
+        expect.any(String)
+      );
+
+      vi.unstubAllEnvs();
+    });
+
+    it('should default to debug level and orchestrator-debug.log', async () => {
+      vi.stubEnv('LOG_LEVEL', '');
+      vi.stubEnv('ORCHESTRATOR_LOG_FILE', '');
+
+      vi.resetModules();
+      const { logger } = await import('./logger.js');
+
+      logger.debug('test', 'msg', {});
+
+      expect(fs.appendFileSync).toHaveBeenCalledWith(
+        'orchestrator-debug.log',
+        expect.any(String)
+      );
+
+      vi.unstubAllEnvs();
+    });
+  });
 });
