@@ -7,9 +7,16 @@
   "scripts": {
     "dev": "tsx src/index.tsx",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
-  "keywords": ["claude", "orchestrator", "ai", "terminal"],
+  "keywords": [
+    "claude",
+    "orchestrator",
+    "ai",
+    "terminal"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -22,6 +29,7 @@
     "@types/node": "^25.0.3",
     "@types/react": "^19.2.7",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
   }
 }
