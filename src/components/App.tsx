@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Text, useApp, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 import { AgentList } from './AgentList.js';
+import { FocusedAgent } from './FocusedAgent.js';
 import { getStore, addAgent, updateAgentStatus, appendAgentOutput, setFocusedAgent } from '../store.js';
 import { cleanInput } from '../input-cleaner.js';
 import { detectStatus } from '../status-detector.js';
@@ -118,6 +119,33 @@ export const App: React.FC = () => {
     setFocusedAgent(id);
     syncAgents();
   }, [syncAgents]);
+
+  // Handle unfocusing agent
+  const handleUnfocus = useCallback(() => {
+    setFocusedAgent(null);
+    syncAgents();
+  }, [syncAgents]);
+
+  // Get the focused agent's data if one is focused
+  const getFocusedAgentData = useCallback(() => {
+    if (!focusedId) return null;
+    const store = getStore();
+    return store.agents.get(focusedId);
+  }, [focusedId]);
+
+  const focusedAgentData = getFocusedAgentData();
+
+  // Render focused view if an agent is focused
+  if (focusedId && focusedAgentData) {
+    return (
+      <FocusedAgent
+        id={focusedId}
+        output={focusedAgentData.outputBuffer}
+        status={focusedAgentData.status.state}
+        onBack={handleUnfocus}
+      />
+    );
+  }
 
   return (
     <Box flexDirection="column" padding={1}>
