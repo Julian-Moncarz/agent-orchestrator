@@ -47,11 +47,27 @@ vi.mock('../adapters/index.js', () => ({
   })),
 }));
 
-import { getStore } from '../store.js';
+// Mock the logger module
+vi.mock('../logger.js', () => ({
+  logger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+import { getStore, updateAgentStatus } from '../store.js';
+import { detectStatus } from '../status-detector.js';
 
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('renders without crashing', () => {
@@ -169,6 +185,105 @@ describe('App', () => {
       expect(output).not.toContain('Agent Orchestrator');
       // Should NOT show input prompt
       expect(output).not.toContain('Enter task...');
+    });
+  });
+
+  describe('Status detection with empty buffers', () => {
+    it('should NOT call detectStatus when agent has empty output buffer', async () => {
+      // Mock an agent with empty outputBuffer (simulating a just-spawned agent)
+      const mockAgentEmpty = {
+        config: { id: 'agent-empty', type: 'claude-code', workingDirectory: '/tmp', task: 'test' },
+        handle: { id: 'agent-empty', config: {}, send: vi.fn(), kill: vi.fn(), onOutput: vi.fn(), onExit: vi.fn() },
+        status: { id: 'agent-empty', state: 'starting' as const, summary: '', lastOutput: '' },
+        outputBuffer: '', // Empty buffer - this is the key condition
+      };
+
+      vi.mocked(getStore).mockReturnValue({
+        agents: new Map([['agent-empty', mockAgentEmpty]]),
+        focusedAgentId: null,
+        orchestratorInput: '',
+      });
+
+      await act(async () => {
+        render(<App />);
+      });
+
+      // Advance past the 3-second status refresh interval
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3500);
+      });
+
+      // detectStatus should NOT have been called because outputBuffer is empty
+      expect(detectStatus).not.toHaveBeenCalled();
+    });
+
+    it('should call detectStatus when agent has non-empty output buffer', async () => {
+      // Mock an agent with non-empty outputBuffer
+      const mockAgentWithOutput = {
+        config: { id: 'agent-output', type: 'claude-code', workingDirectory: '/tmp', task: 'test' },
+        handle: { id: 'agent-output', config: {}, send: vi.fn(), kill: vi.fn(), onOutput: vi.fn(), onExit: vi.fn() },
+        status: { id: 'agent-output', state: 'working' as const, summary: '', lastOutput: '' },
+        outputBuffer: 'Some actual output from the agent', // Non-empty buffer
+      };
+
+      vi.mocked(getStore).mockReturnValue({
+        agents: new Map([['agent-output', mockAgentWithOutput]]),
+        focusedAgentId: null,
+        orchestratorInput: '',
+      });
+
+      await act(async () => {
+        render(<App />);
+      });
+
+      // Advance past the 3-second status refresh interval
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3500);
+      });
+
+      // detectStatus SHOULD have been called because outputBuffer has content
+      expect(detectStatus).toHaveBeenCalledWith('agent-output', 'Some actual output from the agent');
+    });
+
+    it('should skip agents with empty buffers but process agents with output', async () => {
+      // Mock two agents: one with empty buffer, one with output
+      const mockAgentEmpty = {
+        config: { id: 'agent-empty', type: 'claude-code', workingDirectory: '/tmp', task: 'test1' },
+        handle: { id: 'agent-empty', config: {}, send: vi.fn(), kill: vi.fn(), onOutput: vi.fn(), onExit: vi.fn() },
+        status: { id: 'agent-empty', state: 'starting' as const, summary: '', lastOutput: '' },
+        outputBuffer: '', // Empty
+      };
+
+      const mockAgentWithOutput = {
+        config: { id: 'agent-output', type: 'claude-code', workingDirectory: '/tmp', task: 'test2' },
+        handle: { id: 'agent-output', config: {}, send: vi.fn(), kill: vi.fn(), onOutput: vi.fn(), onExit: vi.fn() },
+        status: { id: 'agent-output', state: 'working' as const, summary: '', lastOutput: '' },
+        outputBuffer: 'Has output', // Non-empty
+      };
+
+      vi.mocked(getStore).mockReturnValue({
+        agents: new Map([
+          ['agent-empty', mockAgentEmpty],
+          ['agent-output', mockAgentWithOutput],
+        ]),
+        focusedAgentId: null,
+        orchestratorInput: '',
+      });
+
+      await act(async () => {
+        render(<App />);
+      });
+
+      // Advance past the 3-second status refresh interval
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3500);
+      });
+
+      // detectStatus should only have been called once - for the agent with output
+      expect(detectStatus).toHaveBeenCalledTimes(1);
+      expect(detectStatus).toHaveBeenCalledWith('agent-output', 'Has output');
+      // And NOT called with agent-empty
+      expect(detectStatus).not.toHaveBeenCalledWith('agent-empty', expect.anything());
     });
   });
 });

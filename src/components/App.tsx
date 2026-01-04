@@ -115,6 +115,12 @@ export const App: React.FC = () => {
       const store = getStore();
       for (const [id, agent] of store.agents) {
         if (agent.status.state === 'working' || agent.status.state === 'starting') {
+          // Skip status detection for agents with empty output buffers
+          // This prevents the LLM from returning nonsense when there's nothing to analyze
+          if (agent.outputBuffer.length === 0) {
+            logger.debug('app', 'skipping status detection for empty buffer', { agentId: id });
+            continue;
+          }
           try {
             const newStatus = await detectStatus(id, agent.outputBuffer);
             updateAgentStatus(id, newStatus);
