@@ -1,0 +1,6 @@
+{
+  "enabledPlugins": {
+    "compound-engineering@every-marketplace": false,
+    "plugin-dev@claude-plugins-official": false
+  }
+}
