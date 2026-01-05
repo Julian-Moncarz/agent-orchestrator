@@ -1,25 +1,11 @@
-# Agent Orchestrator: User Flow & Requirements
-
-## The One-Liner
+# Agent Orchestrator
 
 A co-pilot that helps you apply context management best practices, with access to all the tools you have (toggling MCPs, starting chats, forking sessions).
 
----
-
-## Key Assumptions
-
-- **Projects are set up well** - AGENTS.md/CLAUDE.md exists, good folder structure, etc.
-- **Agents do a good job** - We trust Claude Code/Amp to execute tasks competently
-- **Infrastructure is in place** - User doesn't need to yap huge prompts; agents can figure things out
-
----
-
-## Terminology
+https://ampcode.com/guides/context-management - this taught me that you want the minimal set of tokens in the model's context window, but as a user it is annoying to create new threads and chats and toggle on and off mcps etc → have the user talk to an "orchestrator" layer which can create new threads, fork them, give voice typed instructions a quick line edit, turn off unneeded mcps etc. Give the orchestrator all the tools that we as the users of coding agents use.
 
 - **Orchestrator** - The meta-layer that manages agents
 - **Agent** - A Claude Code/Amp instance spawned by the orchestrator
-
----
 
 ## Core Principles
 
@@ -52,19 +38,15 @@ A co-pilot that helps you apply context management best practices, with access t
 ### 5. Context Source Awareness (Modular)
 - Orchestrator has access to context sources: Linear, GitHub issues/PRs, git history, local files, MCPs/plugins
 - Can enrich prompts with relevant context automatically
-- User can easily add new context sources (modular/pluggable)
-
-### 6. Directory/Project Awareness
+- User can easily add new context sources (modular/pluggable)?
 - Orchestrator knows WHERE to run each agent
-- Resolves "X project" to a directory
+- Resolves "X project" to a directory, runs an agent there
 - If ambiguous, asks for clarification
 - Has enough context to resolve autonomously when possible
 
 ### 7. Configurable Notifications
 - When focused on one agent, other agents can notify if they need input
 - User controls notification criteria (errors only, all questions, etc.)
-
----
 
 ## User Flow
 
@@ -184,8 +166,6 @@ User confirms, task starts.
 - Future: Codex, others
 - Orchestrator code is separate from agent adapter code
 
----
-
 ## Tabled for Future (Out of Scope for v1)
 
 ### Worktrees / Isolated Environments
@@ -195,8 +175,6 @@ User confirms, task starts.
 - Orchestrator could spin up isolated environments like a human would
 
 **Architecture should not preclude this.**
-
----
 
 ## Unlimited Orchestrator Context (Nice-to-Have)
 
