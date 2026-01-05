@@ -1,5 +1,7 @@
 # Agent Orchestrator
 
+Good context managment practices should be the responsibility of the system, not of the user. It should be very hard to use a coding agent in a way which manages it's context poorly
+
 A co-pilot that helps you apply context management best practices, with access to all the tools you have (toggling MCPs, starting chats, forking sessions).
 
 https://ampcode.com/guides/context-management - this taught me that you want the minimal set of tokens in the model's context window, but as a user it is annoying to create new threads and chats and toggle on and off mcps etc → have the user talk to an "orchestrator" layer which can create new threads, fork them, give voice typed instructions a quick line edit, turn off unneeded mcps etc. Give the orchestrator all the tools that we as the users of coding agents use.
