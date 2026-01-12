@@ -6,13 +6,10 @@ A co-pilot that helps you apply context management best practices, with access t
 
 https://ampcode.com/guides/context-management - this taught me that you want the minimal set of tokens in the model's context window, but as a user it is annoying to create new threads and chats and toggle on and off mcps etc → have the user talk to an "orchestrator" layer which can create new threads, fork them, give voice typed instructions a quick line edit, turn off unneeded mcps etc. Give the orchestrator all the tools that we as the users of coding agents use.
 
-- **Orchestrator** - The meta-layer that manages agents
-- **Agent** - A Claude Code/Amp instance spawned by the orchestrator
-
-## Core Principles
+## Principles
 
 ### 1. Full Visibility, Full Editability, User in Control
-- Orchestrator *suggests*, user *confirms*
+- Orchestrator suggests, user confirms
 - Shows cleaned prompt → user can edit → edits get re-cleaned if yappy
 - Suggests "this should be a new thread" → user confirms
 - Never sends without approval
@@ -37,7 +34,7 @@ https://ampcode.com/guides/context-management - this taught me that you want the
 - Kill agents
 - Access context sources (Linear, GitHub, etc.)
 
-### 5. Context Source Awareness (Modular)
+### 5. Context Source Awareness (Maybe)
 - Orchestrator has access to context sources: Linear, GitHub issues/PRs, git history, local files, MCPs/plugins
 - Can enrich prompts with relevant context automatically
 - User can easily add new context sources (modular/pluggable)?
@@ -50,7 +47,9 @@ https://ampcode.com/guides/context-management - this taught me that you want the
 - When focused on one agent, other agents can notify if they need input
 - User controls notification criteria (errors only, all questions, etc.)
 
-## User Flow
+## User Flow 
+
+NOTE: I think this is not a good implimentation of the above desiderata - will redesign in the future.
 
 ### Phase 1: User Yaps
 
